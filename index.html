@@ -41,6 +41,7 @@ button.p{background:var(--ac);border-color:var(--ac);color:#fff}
 .msg{color:var(--mu);font-size:.85rem;text-align:center;margin-top:10px;min-height:1.2em}
 label.l{display:block;font-size:.8rem;color:var(--mu);margin:12px 0 4px}
 select{padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:.95rem}
+.try.part{color:#d99100;border-color:#d99100}
 a.exit{color:var(--mu);font-size:.8rem;cursor:pointer;text-decoration:underline}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -53,7 +54,7 @@ a.exit{color:var(--mu);font-size:.8rem;cursor:pointer;text-decoration:underline}
   <!-- MENÚ -->
   <div class="card" id="menu">
     <label class="l" for="name" style="margin-top:0">Tu nombre</label>
-    <input type="text" id="name" maxlength="16" placeholder="Ej. Malena" autocomplete="off">
+    <input type="text" id="name" maxlength="16" placeholder="Ej. Saúl" autocomplete="off">
     <button class="b p menu-btn" id="solo">🎧 Jugar solo</button>
     <button class="b menu-btn" id="crear">👥 Crear sala (multijugador)</button>
     <label class="l">¿Tienes un código de sala?</label>
@@ -94,7 +95,8 @@ a.exit{color:var(--mu);font-size:.8rem;cursor:pointer;text-decoration:underline}
     <div class="time"><span id="cur">0:00</span><span id="max">0:00.5</span></div>
     <button id="play" disabled>…</button>
     <div id="game">
-      <input type="text" id="guess" list="songs" placeholder="Busca la canción…" autocomplete="off">
+      <input type="text" id="guess" list="songs" placeholder="Título, artista o ambos…" autocomplete="off">
+      <div style="color:var(--mu);font-size:.75rem;margin:6px 0 0">Escribe el título, el artista o los dos («Título — Artista»). Si pones un artista, te salen sus canciones.</div>
       <datalist id="songs"></datalist>
       <div class="row">
         <button class="b" id="skip">Saltar</button>
@@ -139,7 +141,7 @@ const STEPS=[.5,1,2,4,8,16];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let SONGS=[],MILISTA=[],song,step,over,ready=false,timer,raf,gid=0;
-let mode="menu",peer,conn,code="",roster=[],hostRound=null,lastGuess="",doneMe=false,waiting=false,ended=false,players={};
+let artistFound=false,mode="menu",peer,conn,code="",roster=[],hostRound=null,lastGuess="",doneMe=false,waiting=false,ended=false,players={};
 const ME="host";
 const aud=new Audio();aud.preload="auto";
 
@@ -209,10 +211,25 @@ function setDatalist(titles){
   const v=new Set();
   $("#songs").innerHTML=titles.filter(t=>!v.has(norm(t))&&v.add(norm(t))).map(t=>`<option value="${esc(t)}">`).join("");
 }
+function opcionesDe(arr){
+  const o=[],v=new Set();
+  arr.forEach(s=>{const c=s.title+" — "+s.artist;if(!v.has(c)){v.add(c);o.push(c)}});
+  [...new Set(arr.map(s=>s.artist))].forEach(a=>o.push(a));
+  return o;
+}
+function evalGuess(text,s){
+  const partes=String(text).split(/\s+[—–-]\s+/).map(norm).filter(Boolean);
+  const cand=[norm(String(text)),...partes];
+  const nt=norm(s.title);
+  const artistas=s.artist.split(/,|&| feat\.? /i).map(norm).filter(Boolean).concat(norm(s.artist));
+  const t=cand.includes(nt);
+  const ar=cand.some(c=>c.length>=3&&artistas.some(a=>a===c||(c.length>=5&&a.includes(c))));
+  return {t,ar};
+}
 function usar(arr,etiqueta){
   SONGS=arr;
   if(mode==="solo"){
-    setDatalist(arr.map(s=>s.title));
+    setDatalist(opcionesDe(arr));
     $("#sub").textContent=arr.length+" canciones · "+etiqueta+" · 6 intentos";
     newGame();
   }else{
@@ -246,7 +263,7 @@ function cargar(s){return new Promise(res=>{
   aud.src=s.preview;aud.load();
 })}
 function resetRoundUI(){
-  step=0;over=false;ready=false;doneMe=false;waiting=false;
+  step=0;over=false;ready=false;doneMe=false;waiting=false;artistFound=false;
   $("#tries").innerHTML="";
   for(let i=0;i<6;i++)$("#tries").insertAdjacentHTML("beforeend",'<div class="try"></div>');
   $("#bar").innerHTML=STEPS.map(()=>"<i><b></b></i>").join("");
@@ -307,7 +324,9 @@ function submit(){
   const v=$("#guess").value.trim();if(!v)return;
   $("#guess").value="";
   if(mode==="solo"){
-    if(norm(v)===norm(song.title)){addTry("✔ "+song.title,"good");finish(true)}
+    const r=evalGuess(v,song);
+    if(r.t){addTry("✔ "+song.title+(r.ar?" — "+song.artist:""),"good");finish(true)}
+    else if(r.ar){artistFound=true;wrong("🎤 Artista correcto — falta el título","part")}
     else wrong("✘ "+v,"bad");
   }else{
     lastGuess=v;waiting=true;
@@ -333,7 +352,7 @@ function finish(win){
   e.innerHTML=`<h2>${win?"🎉 ¡Acertaste!":"😅 La canción era…"}</h2>
    ${song.cover?`<img src="${esc(song.cover)}" alt="" width="120" height="120" style="border-radius:10px;margin:6px 0">`:""}
    <p style="font-size:1.15rem;margin:4px 0"><b>${esc(song.title)}</b></p><p style="margin:0 0 6px">${esc(song.artist)}</p>
-   <p style="color:var(--mu);font-size:.85rem;margin:0">${win?`Lo conseguiste en el intento ${step+1} de 6`:"Mejor suerte la próxima"} · pulsa ▶ para oírla${song.link?` · <a href="${esc(song.link)}" target="_blank" rel="noopener" style="color:var(--ac)">abrir en Deezer</a>`:""}</p>`;
+   <p style="color:var(--mu);font-size:.85rem;margin:0">${win?`Lo conseguiste en el intento ${step+1} de 6`:"Mejor suerte la próxima"+(artistFound?" (pero acertaste el artista 🎤)":"")} · pulsa ▶ para oírla${song.link?` · <a href="${esc(song.link)}" target="_blank" rel="noopener" style="color:var(--ac)">abrir en Deezer</a>`:""}</p>`;
   [...$("#bar").children].forEach(b=>b.classList.add("on"));
   $("#next").textContent="Siguiente canción ▶";
 }
@@ -423,12 +442,18 @@ function handleHost(src,m){
   if(!p||!hostRound||hostRound.over||p.done)return;
   if(m.t==="guess"){
     const st=Math.max(0,Math.min(5,+m.step||0));
-    if(norm(String(m.text))===norm(hostRound.song.title)){
+    const r=evalGuess(m.text,hostRound.song);
+    if(r.t){
       let pts=6-st;
+      if(r.ar&&!p.artistDone)pts+=1;
       const primero=hostRound.first===null;
       if(primero){hostRound.first=id;pts+=2}
-      p.score+=pts;p.pts=pts;p.done=true;
-      reply(id,{t:"result",ok:true,pts,first:primero});
+      p.score+=pts;p.pts+=pts;p.done=true;
+      reply(id,{t:"result",ok:true,pts:p.pts,first:primero,both:r.ar});
+    }else if(r.ar){
+      const gain=p.artistDone?0:1;
+      p.artistDone=true;p.score+=gain;p.pts+=gain;
+      reply(id,{t:"result",ok:false,artist:true,gain});
     }else reply(id,{t:"result",ok:false});
   }else if(m.t==="giveup"){p.done=true;p.pts=0}
   else return;
@@ -441,12 +466,12 @@ $("#start").onclick=()=>{
   const bag=[...SONGS].sort(()=>Math.random()-.5).slice(0,total);
   Object.values(players).forEach(p=>{p.score=0});
   hostRound={bag,n:0,total,over:true,first:null,song:null};
-  bcastAll({t:"start",titles:[...new Set(SONGS.map(s=>s.title))]});
+  bcastAll({t:"start",titles:opcionesDe(SONGS)});
   nextRound();
 };
 function nextRound(){
   const r=hostRound;r.n++;r.over=false;r.first=null;r.song=r.bag[r.n-1];
-  Object.values(players).forEach(p=>{p.done=false;p.pts=0});
+  Object.values(players).forEach(p=>{p.done=false;p.pts=0;p.artistDone=false});
   bcastAll({t:"round",n:r.n,total:r.total,preview:r.song.preview});
   bcastAll({t:"board",players:pub()});
 }
@@ -534,7 +559,8 @@ function onClientMsg(m){
       if(m.ok){
         addTry(`✔ ¡Correcto! +${m.pts}${m.first?" (¡el primero!)":""}`,"good");
         esperar(`🎉 ¡Acertaste! +${m.pts} puntos`);
-      }else wrong("✘ "+lastGuess,"bad");
+      }else if(m.artist)wrong("🎤 Artista correcto"+(m.gain?" +"+m.gain:"")+" — falta el título","part");
+      else wrong("✘ "+lastGuess,"bad");
       break;
     case "reveal":{
       over=true;stop();renderScore(m.players);
