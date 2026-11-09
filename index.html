@@ -86,10 +86,17 @@ a.exit{color:var(--mu);font-size:.8rem;cursor:pointer;text-decoration:underline}
   <div class="card hide" id="gamecard">
     <div id="score" class="hide"></div>
     <div id="solopool"><div id="genrebox" style="margin-bottom:16px">
-      <div class="row" style="margin:0 0 8px"><input type="text" id="ginput" placeholder="Género o artista (p. ej. Quevedo)…"><button class="b p" id="gbtn" style="flex:0 0 auto">Buscar</button></div>
+      <div class="row" style="margin:0 0 8px"><input type="text" id="ginput" placeholder="Género, artista o enlace de playlist…"><button class="b p" id="gbtn" style="flex:0 0 auto">Buscar</button></div>
       <div id="chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      <div style="color:var(--mu);font-size:.75rem;margin-top:8px">💡 Puedes pegar el enlace de una playlist pública de Deezer.</div>
       <div id="gstatus" style="color:var(--mu);font-size:.8rem;margin-top:6px"></div>
     </div></div>
+    <div id="soloctl">
+      <label class="l" style="margin-top:0">Número de rondas</label>
+      <select id="srounds"><option>5</option><option selected>10</option><option>15</option><option>20</option></select>
+      <button class="b p menu-btn" id="sstart">▶ Empezar partida</button>
+    </div>
+    <div id="playarea" class="hide">
     <div class="tries" id="tries"></div>
     <div class="bar" id="bar"></div>
     <div class="time"><span id="cur">0:00</span><span id="max">0:00.5</span></div>
@@ -105,11 +112,12 @@ a.exit{color:var(--mu);font-size:.8rem;cursor:pointer;text-decoration:underline}
       </div>
     </div>
     <div id="end" class="end hide"></div>
-    <div style="text-align:center;margin-top:14px"><button class="b" id="next" style="max-width:220px" disabled>Otra canción</button></div>
+    <div style="text-align:center;margin-top:14px"><button class="b" id="next" style="max-width:220px" disabled>Siguiente ronda ▶</button></div>
+    </div>
   </div>
 
   <p style="text-align:center;margin-top:14px"><a class="exit" id="exit">Salir al menú</a></p>
-  <p style="text-align:center;color:var(--mu);font-size:.75rem">Fragmentos de 30 s de Deezer</p>
+  <p style="text-align:center;color:var(--mu);font-size:.75rem">Fragmentos de 30 s de Deezer · v7</p>
 </main>
 <script>
 const LISTA=[
@@ -123,8 +131,8 @@ const LISTA=[
  ["Gasolina","Daddy Yankee"],["Despacito","Luis Fonsi"],["Danza Kuduro","Don Omar"],
  ["Mi Gente","J Balvin"],["Chantaje","Shakira"]
 ];
-const REG=["Daddy Yankee","Don Omar","Wisin & Yandel","Bad Bunny","J Balvin","Ozuna","Maluma","Karol G","Anuel AA","Nicky Jam","Farruko","Rauw Alejandro","Myke Towers","Sech","Feid","Jhay Cortez","Arcángel","Zion & Lennox","Tito El Bambino","Plan B","Tego Calderón","Ivy Queen","Becky G","Natti Natasha","Lunay","Manuel Turizo","Mora","Eladio Carrión","Quevedo","Anitta","Chencho Corleone","Jowell & Randy","De La Ghetto","Yandel","Nio García","Brray","Justin Quiles","Lenny Tavárez","Dalex","Gente de Zona"];
-const TRAP=["Bad Bunny","Anuel AA","Quevedo","Bryant Myers","Brray","Eladio Carrión","Duki","Bizarrap","Nicki Nicole","Trueno","Cazzu","Lit Killah","Khea","Ozuna","Myke Towers","Jhay Cortez","Arcángel","De La Ghetto","Mora","Rochy RD","Ñengo Flow","Noriel","Casper Mágico","Darell","Sech","Feid","Tiago PZK","Neo Pistea","Ysy A","Bad Gyal","Young Miko","Lunay","Almighty","Farruko","Lary Over","Jhayco"];
+const REG=["Daddy Yankee","Don Omar","Wisin & Yandel","Wisin","Yandel","Bad Bunny","J Balvin","Ozuna","Maluma","Karol G","Anuel AA","Nicky Jam","Farruko","Rauw Alejandro","Myke Towers","Sech","Feid","Jhay Cortez","Arcángel","Zion & Lennox","Tito El Bambino","Plan B","Tego Calderón","Ivy Queen","Becky G","Natti Natasha","Lunay","Manuel Turizo","Mora","Eladio Carrión","Quevedo","Anitta","Chencho Corleone","Jowell & Randy","De La Ghetto","Nio García","Brray","Justin Quiles","Lenny Tavárez","Dalex","Gente de Zona","Alexis & Fido","Héctor el Father","Baby Rasta & Gringo","Cosculluela","Rkm & Ken-Y","Chacal","Bryant Myers","Darell","Casper Mágico","Ñengo Flow","Kevin Roldán","Reykon","Blessd","Ryan Castro","Danny Ocean","Kapo","Dei V","Jory Boy","Lyanno","Ankhal","Tokischa","Rosalía","Nicky Jam","Yomo","Guaynaa","Nengo Flow","Ele A El Dominio","Sebastián Yatra","Maluma","Camilo"];
+const TRAP=["Bad Bunny","Anuel AA","Quevedo","Bryant Myers","Brray","Eladio Carrión","Duki","Bizarrap","Nicki Nicole","Trueno","Cazzu","Lit Killah","Khea","Ozuna","Myke Towers","Jhay Cortez","Arcángel","De La Ghetto","Mora","Rochy RD","Ñengo Flow","Noriel","Casper Mágico","Darell","Sech","Feid","Tiago PZK","Neo Pistea","Ysy A","Bad Gyal","Young Miko","Lunay","Almighty","Farruko","Lary Over","Jhayco","Rels B","Gera MX","Natanael Cano","Junior H","Peso Pluma","Fuerza Regida","Pablo Chill-E","Polimá Westcoast","Standly","Cris MJ","Marcianeke","Wos","Emilia","Bhavi","FMK","L-Gante","Paulo Londra","Rusherking","Callejero Fino","C. Tangana","Morad","Beny Jr","Saiko","Yung Beef","Álvaro Díaz","El Alfa","Tokischa","Yailin la Más Viral","Ryan Castro","Blessd","Kris R.","Kevin Roldán","Alee","Jay Wheeler","Rauw Alejandro","Dei V","Ovi","Lola Indigo","Nesi","Yandel","Dalex"];
 const SEMILLAS={
  "reggaeton":REG,
  "trap latino":TRAP,
@@ -141,7 +149,7 @@ const STEPS=[.5,1,2,4,8,16];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let SONGS=[],MILISTA=[],song,step,over,ready=false,timer,raf,gid=0;
-let bolsa=[],usadas=new Set(),ultima=null,artistFound=false,mode="menu",peer,conn,code="",roster=[],hostRound=null,lastGuess="",doneMe=false,waiting=false,ended=false,players={};
+let roundStart=0,roundPts=0,roundTime=0,soloG=null,bolsa=[],usadas=new Set(),ultima=null,artistFound=false,mode="menu",peer,conn,code="",roster=[],hostRound=null,lastGuess="",doneMe=false,waiting=false,ended=false,players={};
 const ME="host";
 const aud=new Audio();aud.preload="auto";
 
@@ -157,9 +165,19 @@ function jsonp(url){return new Promise(res=>{
   window[n]=done;sc.onerror=()=>done(null);setTimeout(()=>done(null),10000);
   sc.src=url+"&output=jsonp&callback="+n;document.head.appendChild(sc);
 })}
-async function lote(urls,tam=6){
+async function getD(url,n=3){
+  const d=await jsonp(url);
+  if(d&&d.error&&+d.error.code===4&&n>0){await sleep(2000);return getD(url,n-1)}
+  if(!d&&n===3){await sleep(800);return getD(url,2)}
+  return d;
+}
+async function lote(urls,tam=4,onProg){
   const out=[];
-  for(let i=0;i<urls.length;i+=tam){out.push(...await Promise.all(urls.slice(i,i+tam).map(jsonp)));await sleep(300)}
+  for(let i=0;i<urls.length;i+=tam){
+    out.push(...await Promise.all(urls.slice(i,i+tam).map(u=>getD(u))));
+    if(onProg)onProg(Math.min(i+tam,urls.length),urls.length);
+    await sleep(450);
+  }
   return out;
 }
 const q=(x,l=50)=>"https://api.deezer.com/search?limit="+l+"&q="+encodeURIComponent(x);
@@ -186,14 +204,29 @@ async function buscarMiLista(){
 }
 async function porGenero(g){
   const key=norm(g),sem=SEMILLAS[key];
+  const st=t=>{$("#gstatus").textContent=t};
   let all=[];
   if(sem){
-    const arts=[...sem].sort(()=>Math.random()-.5).slice(0,24);
-    const rs=await lote(arts.map(a=>q(`artist:"${a}"`,40)));
+    const arts=[...new Set(sem)].sort(()=>Math.random()-.5).slice(0,32);
+    st("Buscando artistas… 0%");
+    const rs=await lote(arts.map(a=>q(`artist:"${a}"`,50)),4,(d,t)=>st("Buscando artistas… "+Math.round(d/t*60)+"%"));
+    const ids=new Map();
     rs.forEach((d,i)=>{
       const na=norm(arts[i]);
-      const c=items(d).filter(x=>bueno(x)&&norm(x.artist.name).includes(na)).slice(0,25).sort(()=>Math.random()-.5).slice(0,8);
-      all.push(...c.map(mk));
+      const c=items(d).filter(x=>bueno(x)&&norm(x.artist.name).includes(na));
+      if(c.length)ids.set(c[0].artist.id,c[0].artist.name);
+      all.push(...c.slice(0,35).sort(()=>Math.random()-.5).slice(0,12).map(mk));
+    });
+    st("Ampliando con artistas parecidos… 60%");
+    const base=[...ids.keys()].sort(()=>Math.random()-.5).slice(0,8);
+    const rel=await lote(base.map(id=>"https://api.deezer.com/artist/"+id+"/related?limit=20"),4);
+    const vistosA=new Set(ids.keys()),cand=[];
+    rel.forEach(d=>((d&&d.data)||[]).forEach(a=>{if(a&&!vistosA.has(a.id)){vistosA.add(a.id);cand.push(a)}}));
+    const elegidos=cand.sort((a,b)=>(b.nb_fan||0)-(a.nb_fan||0)).slice(0,24).sort(()=>Math.random()-.5).slice(0,14);
+    const tops=await lote(elegidos.map(a=>"https://api.deezer.com/artist/"+a.id+"/top?limit=30"),4,(d,t)=>st("Ampliando con artistas parecidos… "+(60+Math.round(d/t*40))+"%"));
+    tops.forEach((d,i)=>{
+      const c=items(d).filter(x=>bueno(x)&&x.artist.id===elegidos[i].id);
+      all.push(...c.sort(()=>Math.random()-.5).slice(0,8).map(mk));
     });
   }else{
     let rs=items(await jsonp(q(`artist:"${g}"`,50))).filter(x=>bueno(x)&&norm(x.artist.name).includes(norm(g)));
@@ -226,28 +259,82 @@ function evalGuess(text,s){
   const ar=cand.some(c=>c.length>=3&&artistas.some(a=>a===c||(c.length>=5&&a.includes(c))));
   return {t,ar};
 }
+const keyOf=x=>norm(x.title)+"|"+norm(x.artist);
+let recientes=[];
 function siguiente(){
   if(!bolsa.length){
     const vt=new Set();
     bolsa=[...SONGS].sort(()=>Math.random()-.5).filter(x=>{const t=norm(x.title);if(vt.has(t))return false;vt.add(t);return true});
-    if(bolsa.length>1&&ultima&&bolsa[bolsa.length-1]===ultima)bolsa.unshift(bolsa.pop());
   }
-  ultima=bolsa.pop();
-  return ultima;
+  const rec=recientes.slice(-Math.min(5,Math.max(0,SONGS.length-1)));
+  let i=bolsa.length-1;
+  while(i>0&&rec.includes(keyOf(bolsa[i])))i--;
+  const x=bolsa.splice(i,1)[0];
+  recientes.push(keyOf(x));recientes=recientes.slice(-10);
+  ultima=x;
+  return x;
+}
+function armarBolsa(sel){
+  const total=Math.min(sel,new Set(SONGS.map(x=>norm(x.title))).size);
+  let libres=SONGS.filter(x=>!usadas.has(keyOf(x)));
+  if(libres.length<total){usadas=new Set();libres=[...SONGS]}
+  const vt=new Set();
+  const bag=libres.sort(()=>Math.random()-.5).filter(x=>{const t=norm(x.title);if(vt.has(t))return false;vt.add(t);return true}).slice(0,total);
+  bag.forEach(x=>usadas.add(keyOf(x)));
+  return bag;
 }
 function usar(arr,etiqueta){
   SONGS=arr;bolsa=[];usadas=new Set();
   if(mode==="solo"){
     setDatalist(opcionesDe(arr));
-    $("#sub").textContent=arr.length+" canciones · "+etiqueta+" · 6 intentos";
-    newGame();
+    $("#sub").textContent=arr.length+" canciones · "+etiqueta;
   }else{
     $("#poolinfo").textContent=arr.length+" canciones · "+etiqueta;
   }
 }
 function marcar(el){document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c===el))}
+function parsePlaylist(t){
+  if(/link\.deezer\.com|dzr\.page\.link/i.test(t))return "corto";
+  const m=t.match(/playlist\/(\d+)/i)||t.match(/^\s*(\d{6,})\s*$/);
+  return m?m[1]:null;
+}
+async function porPlaylist(id){
+  const info=await jsonp("https://api.deezer.com/playlist/"+id+"?limit=1");
+  if(!info)return {error:"No se pudo conectar con Deezer. Inténtalo de nuevo."};
+  if(info.error)return {error:"No encontré esa playlist. Comprueba el enlace."};
+  if(info.public===false)return {error:"Esa playlist es privada. Hazla pública en Deezer para poder usarla."};
+  const tracks=[];let idx=0;
+  while(idx<600){
+    const d=await jsonp("https://api.deezer.com/playlist/"+id+"/tracks?limit=100&index="+idx);
+    const dat=(d&&d.data)||[];
+    if(!dat.length)break;
+    tracks.push(...dat);idx+=dat.length;
+    if(!d.next)break;
+  }
+  const vistos=new Set(),all=[];let sinPrev=0;
+  for(const x of tracks){
+    if(!x||!x.artist)continue;
+    if(!x.preview){sinPrev++;continue}
+    const it=mk(x),k=norm(it.title)+"|"+norm(it.artist);
+    if(!norm(it.title)||vistos.has(k))continue;
+    vistos.add(k);all.push(it);
+  }
+  return {all,titulo:info.title||"playlist",sinPrev};
+}
+async function cargarPlaylist(id){
+  stop();
+  $("#gstatus").textContent="Cargando playlist…";
+  const r=await porPlaylist(id);
+  if(r.error){$("#gstatus").textContent=r.error;return}
+  if(r.all.length<2){$("#gstatus").textContent="La playlist tiene muy pocas canciones con fragmento de audio.";return}
+  $("#gstatus").textContent=r.all.length+" canciones de «"+r.titulo+"»"+(r.sinPrev?" ("+r.sinPrev+" sin audio, omitidas)":"");
+  marcar(null);usar(r.all,"playlist: "+r.titulo);
+}
 async function genero(g,chip){
   if(!g)return;
+  const pl=parsePlaylist(g);
+  if(pl==="corto"){$("#gstatus").textContent="Ese es un enlace corto. Ábrelo en el navegador y copia la dirección completa (deezer.com/…/playlist/número).";return}
+  if(pl){await cargarPlaylist(pl);return}
   stop();
   $("#gstatus").textContent="Buscando «"+g+"»…";
   const c=await porGenero(g);
@@ -272,7 +359,7 @@ function cargar(s){return new Promise(res=>{
   aud.src=s.preview;aud.load();
 })}
 function resetRoundUI(){
-  step=0;over=false;ready=false;doneMe=false;waiting=false;artistFound=false;
+  step=0;over=false;ready=false;doneMe=false;waiting=false;artistFound=false;roundPts=0;roundTime=0;
   $("#tries").innerHTML="";
   for(let i=0;i<6;i++)$("#tries").insertAdjacentHTML("beforeend",'<div class="try"></div>');
   $("#bar").innerHTML=STEPS.map(()=>"<i><b></b></i>").join("");
@@ -334,9 +421,18 @@ function submit(){
   $("#guess").value="";
   if(mode==="solo"){
     const r=evalGuess(v,song);
-    if(r.t){addTry("✔ "+song.title+(r.ar?" — "+song.artist:""),"good");finish(true)}
-    else if(r.ar){artistFound=true;wrong("🎤 Artista correcto — falta el título","part")}
-    else wrong("✘ "+v,"bad");
+    if(r.t){
+      roundTime=(performance.now()-roundStart)/1000;
+      let pts=Math.max(1,10-Math.floor(roundTime/4));
+      if(r.ar&&!artistFound)pts+=1;
+      roundPts+=pts;soloG.score+=pts;renderSoloScore();
+      addTry("✔ "+song.title+(r.ar?" — "+song.artist:"")+` · +${roundPts}`,"good");
+      finish(true);
+    }else if(r.ar){
+      const gain=artistFound?0:1;
+      artistFound=true;roundPts+=gain;soloG.score+=gain;renderSoloScore();
+      wrong("🎤 Artista correcto"+(gain?" +1":"")+" — falta el título","part");
+    }else wrong("✘ "+v,"bad");
   }else{
     lastGuess=v;waiting=true;
     sendToHost({t:"guess",text:v,step});
@@ -344,15 +440,46 @@ function submit(){
 }
 
 /* ---------- Modo solo ---------- */
+const renderSoloScore=()=>{$("#score").innerHTML=`<span class="pl me">Puntos <b>${soloG.score}</b></span>`};
+function soloStart(){
+  if(SONGS.length<2){$("#gstatus").textContent="Hacen falta al menos 2 canciones. Elige otro género.";return}
+  const bag=armarBolsa(+$("#srounds").value);
+  soloG={bag,n:1,total:bag.length,score:0,ended:false};
+  $("#soloctl").classList.add("hide");$("#genrebox").classList.add("hide");
+  $("#playarea").classList.remove("hide");$("#score").classList.remove("hide");
+  desbloquear();
+  newGame();
+}
 async function newGame(){
   stop();const g=++gid;
-  $("#next").disabled=true;$("#next").textContent="Otra canción";
-  song=siguiente();
+  $("#next").disabled=true;
+  song=soloG.bag[soloG.n-1];
   resetRoundUI();
+  $("#sub").textContent=`Ronda ${soloG.n} de ${soloG.total}`;
+  renderSoloScore();
   await cargar(song);
   if(g!==gid)return;
-  if(aud.error){SONGS=SONGS.filter(x=>x!==song);if(SONGS.length)return newGame()}
-  ready=true;$("#play").disabled=false;$("#play").textContent="▶";$("#next").disabled=false;
+  if(aud.error){
+    soloG.bag.splice(soloG.n-1,1);soloG.total=soloG.bag.length;
+    if(soloG.n>soloG.total){soloEnd();return}
+    return newGame();
+  }
+  ready=true;$("#play").disabled=false;$("#next").disabled=false;
+  roundStart=performance.now();
+  play();
+}
+function soloEnd(){
+  soloG.ended=true;over=false;stop();
+  $("#game").classList.add("hide");$("#end").classList.remove("hide");
+  $("#end").innerHTML=`<h2>🏆 Partida terminada</h2><p style="font-size:1.5rem;margin:8px 0"><b>${soloG.score} puntos</b></p><p style="color:var(--mu)">${soloG.total} rondas · ${SONGS.length} canciones en la lista</p>`;
+  $("#next").textContent="Jugar otra vez";$("#next").disabled=false;
+  $("#sub").textContent="Fin de la partida";
+}
+function soloReset(){
+  soloG=null;stop();
+  $("#playarea").classList.add("hide");$("#score").classList.add("hide");
+  $("#soloctl").classList.remove("hide");$("#genrebox").classList.remove("hide");
+  $("#sub").textContent=SONGS.length+" canciones · elige rondas y empieza";
 }
 function finish(win){
   over=true;stop();
@@ -361,13 +488,17 @@ function finish(win){
   e.innerHTML=`<h2>${win?"🎉 ¡Acertaste!":"😅 La canción era…"}</h2>
    ${song.cover?`<img src="${esc(song.cover)}" alt="" width="120" height="120" style="border-radius:10px;margin:6px 0">`:""}
    <p style="font-size:1.15rem;margin:4px 0"><b>${esc(song.title)}</b></p><p style="margin:0 0 6px">${esc(song.artist)}</p>
-   <p style="color:var(--mu);font-size:.85rem;margin:0">${win?`Lo conseguiste en el intento ${step+1} de 6`:"Mejor suerte la próxima"+(artistFound?" (pero acertaste el artista 🎤)":"")} · pulsa ▶ para oírla${song.link?` · <a href="${esc(song.link)}" target="_blank" rel="noopener" style="color:var(--ac)">abrir en Deezer</a>`:""}</p>`;
+   <p style="color:var(--mu);font-size:.85rem;margin:0">${win?`Lo conseguiste en ${roundTime.toFixed(1)} s · +${roundPts} puntos`:"Mejor suerte la próxima"+(artistFound?" (pero acertaste el artista 🎤 +1)":"")} · pulsa ▶ para oírla${song.link?` · <a href="${esc(song.link)}" target="_blank" rel="noopener" style="color:var(--ac)">abrir en Deezer</a>`:""}</p>`;
   [...$("#bar").children].forEach(b=>b.classList.add("on"));
-  $("#next").textContent="Siguiente canción ▶";
+  $("#next").textContent=soloG&&soloG.n>=soloG.total?"Ver resultados ▶":"Siguiente ronda ▶";$("#next").disabled=false;
 }
 $("#next").onclick=()=>{
   if(mode==="solo"){
-    if(!over&&ready){addTry("🏳 Rendido","skip");finish(false)}else newGame();
+    if(!soloG)return;
+    if(soloG.ended){soloReset();return}
+    if(!over&&ready){addTry("🏳 Rendido","skip");finish(false);return}
+    if(soloG.n>=soloG.total)soloEnd();
+    else{soloG.n++;newGame()}
   }else if(mode==="host"){
     if(ended){ended=false;hostRound=null;bcastAll({t:"lobby",players:pub(),code,pool:SONGS.length})}
     else hostNext();
@@ -385,9 +516,13 @@ function nombre(){
   try{localStorage.setItem("nombre",n)}catch(e){}
   return n;
 }
+const SIL="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+function desbloquear(){try{aud.src=SIL;const p=aud.play();if(p)p.catch(()=>{})}catch(e){}}
+$("#sstart").onclick=soloStart;
 $("#exit").onclick=()=>{location.href=location.pathname};
 $("#solo").onclick=async()=>{
-  mode="solo";show("gamecard");
+  mode="solo";desbloquear();show("gamecard");
+  $("#soloctl").classList.remove("hide");$("#playarea").classList.add("hide");
   $("#solopool").appendChild($("#genrebox"));$("#genrebox").classList.remove("hide");
   $("#score").classList.add("hide");$("#next").classList.remove("hide");
   $("#sub").textContent="Cargando…";
@@ -408,7 +543,7 @@ function sendToHost(m){if(mode==="host")handleHost(null,m);else if(conn&&conn.op
 $("#crear").onclick=()=>{
   const n=nombre();if(!n)return;
   if(typeof Peer==="undefined"){msg("No se pudo cargar el sistema de conexión (PeerJS).");return}
-  mode="host";msg("Creando sala…");
+  mode="host";desbloquear();msg("Creando sala…");
   const intentar=()=>{
     code=[...Array(4)].map(()=>"ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.floor(Math.random()*24)]).join("");
     peer=new Peer("adivina-"+code);
@@ -471,13 +606,8 @@ function handleHost(src,m){
 }
 $("#start").onclick=()=>{
   if(SONGS.length<4){$("#poolinfo").textContent="Hacen falta al menos 4 canciones. Elige otro género."; return}
-  const k=x=>norm(x.title)+"|"+norm(x.artist);
-  const total=Math.min(+$("#rounds").value,SONGS.length);
-  let libres=SONGS.filter(x=>!usadas.has(k(x)));
-  if(libres.length<total){usadas=new Set();libres=[...SONGS]}
-  const vt=new Set();
-  const bag=libres.sort(()=>Math.random()-.5).filter(x=>{const t=norm(x.title);if(vt.has(t))return false;vt.add(t);return true}).slice(0,total);
-  bag.forEach(x=>usadas.add(k(x)));
+  const bag=armarBolsa(+$("#rounds").value);
+  const total=bag.length;
   Object.values(players).forEach(p=>{p.score=0});
   hostRound={bag,n:0,total,over:true,first:null,song:null};
   bcastAll({t:"start",titles:opcionesDe(SONGS)});
@@ -505,7 +635,7 @@ $("#unir").onclick=()=>{
   if(typeof Peer==="undefined"){msg("No se pudo cargar el sistema de conexión (PeerJS).");return}
   const c=$("#joincode").value.toUpperCase().replace(/[^A-Z]/g,"");
   if(c.length!==4){msg("El código tiene 4 letras.");return}
-  code=c;mode="client";msg("Conectando…");
+  code=c;mode="client";desbloquear();msg("Conectando…");
   peer=new Peer();
   peer.on("open",()=>{
     conn=peer.connect("adivina-"+code,{reliable:true});
@@ -542,6 +672,8 @@ async function roundSetup(m){
   await cargar(song);
   if(g!==gid)return;
   ready=true;$("#play").disabled=false;$("#play").textContent="▶";
+  roundStart=performance.now();
+  play();
 }
 function onClientMsg(m){
   switch(m.t){
@@ -562,6 +694,7 @@ function onClientMsg(m){
       break}
     case "start":
       setDatalist(m.titles);show("gamecard");
+      $("#soloctl").classList.add("hide");$("#playarea").classList.remove("hide");
       $("#score").classList.remove("hide");
       $("#next").classList.toggle("hide",mode!=="host");
       $("#solopool").appendChild($("#genrebox"));$("#genrebox").classList.add("hide");
