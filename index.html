@@ -141,7 +141,7 @@ const STEPS=[.5,1,2,4,8,16];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let SONGS=[],MILISTA=[],song,step,over,ready=false,timer,raf,gid=0;
-let artistFound=false,mode="menu",peer,conn,code="",roster=[],hostRound=null,lastGuess="",doneMe=false,waiting=false,ended=false,players={};
+let bolsa=[],usadas=new Set(),ultima=null,artistFound=false,mode="menu",peer,conn,code="",roster=[],hostRound=null,lastGuess="",doneMe=false,waiting=false,ended=false,players={};
 const ME="host";
 const aud=new Audio();aud.preload="auto";
 
@@ -226,8 +226,17 @@ function evalGuess(text,s){
   const ar=cand.some(c=>c.length>=3&&artistas.some(a=>a===c||(c.length>=5&&a.includes(c))));
   return {t,ar};
 }
+function siguiente(){
+  if(!bolsa.length){
+    const vt=new Set();
+    bolsa=[...SONGS].sort(()=>Math.random()-.5).filter(x=>{const t=norm(x.title);if(vt.has(t))return false;vt.add(t);return true});
+    if(bolsa.length>1&&ultima&&bolsa[bolsa.length-1]===ultima)bolsa.unshift(bolsa.pop());
+  }
+  ultima=bolsa.pop();
+  return ultima;
+}
 function usar(arr,etiqueta){
-  SONGS=arr;
+  SONGS=arr;bolsa=[];usadas=new Set();
   if(mode==="solo"){
     setDatalist(opcionesDe(arr));
     $("#sub").textContent=arr.length+" canciones · "+etiqueta+" · 6 intentos";
@@ -338,7 +347,7 @@ function submit(){
 async function newGame(){
   stop();const g=++gid;
   $("#next").disabled=true;$("#next").textContent="Otra canción";
-  song=SONGS[Math.floor(Math.random()*SONGS.length)];
+  song=siguiente();
   resetRoundUI();
   await cargar(song);
   if(g!==gid)return;
@@ -462,8 +471,13 @@ function handleHost(src,m){
 }
 $("#start").onclick=()=>{
   if(SONGS.length<4){$("#poolinfo").textContent="Hacen falta al menos 4 canciones. Elige otro género."; return}
+  const k=x=>norm(x.title)+"|"+norm(x.artist);
   const total=Math.min(+$("#rounds").value,SONGS.length);
-  const bag=[...SONGS].sort(()=>Math.random()-.5).slice(0,total);
+  let libres=SONGS.filter(x=>!usadas.has(k(x)));
+  if(libres.length<total){usadas=new Set();libres=[...SONGS]}
+  const vt=new Set();
+  const bag=libres.sort(()=>Math.random()-.5).filter(x=>{const t=norm(x.title);if(vt.has(t))return false;vt.add(t);return true}).slice(0,total);
+  bag.forEach(x=>usadas.add(k(x)));
   Object.values(players).forEach(p=>{p.score=0});
   hostRound={bag,n:0,total,over:true,first:null,song:null};
   bcastAll({t:"start",titles:opcionesDe(SONGS)});
