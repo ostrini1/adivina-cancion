@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adivina la canción · Gratis</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--tx:#1d1d22;--mu:#6b6b76;--ac:#1db954;--bad:#e8453c;--bd:#dcd8cf;--seg:#e9e5dc}
+@media (prefers-color-scheme:dark){:root{--bg:#15151a;--card:#1f1f27;--tx:#f1f0ec;--mu:#9a9aa6;--bd:#34343f;--seg:#2c2c36}}
+html{color-scheme:light dark}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:flex;justify-content:center}
+main{width:100%;max-width:480px;padding:24px 16px}
+h1{font-size:1.6rem;margin:0 0 4px;text-align:center}
+.sub{color:var(--mu);text-align:center;margin:0 0 20px;font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px}
+.tries{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.try{height:38px;border:1px solid var(--bd);border-radius:8px;display:flex;align-items:center;padding:0 12px;font-size:.9rem;color:var(--mu)}
+.try.skip{border-style:dashed}.try.bad{color:var(--bad);border-color:var(--bad)}.try.good{color:var(--ac);border-color:var(--ac);font-weight:600}
+.bar{display:flex;gap:3px;height:10px;margin-bottom:6px}
+.bar i{flex:1;background:var(--seg);border-radius:3px;position:relative;overflow:hidden}
+.bar i.on{background:color-mix(in srgb,var(--ac) 35%,var(--seg))}
+.bar i b{position:absolute;inset:0;background:var(--ac);transform-origin:left;transform:scaleX(0)}
+.time{display:flex;justify-content:space-between;color:var(--mu);font-size:.8rem;margin-bottom:14px}
+#play{display:block;margin:0 auto 16px;width:68px;height:68px;border-radius:50%;border:0;background:var(--ac);color:#fff;font-size:1.6rem;cursor:pointer}
+#play:disabled{opacity:.4;cursor:wait}
+input[type=text]{width:100%;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:1rem}
+.row{display:flex;gap:8px;margin-top:10px}
+button.b{flex:1;padding:12px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:var(--tx);font-size:.95rem;cursor:pointer}
+button.p{background:var(--ac);border-color:var(--ac);color:#fff}
+.end{text-align:center}.end h2{margin:0 0 4px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>🎵 Adivina la canción</h1>
+  <p class="sub" id="sub">Cargando canciones…</p>
+
+  <div class="card hide" id="gamecard">
+    <div class="tries" id="tries"></div>
+    <div class="bar" id="bar"></div>
+    <div class="time"><span id="cur">0:00</span><span id="max">0:00.5</span></div>
+    <button id="play" disabled>▶</button>
+    <div id="game">
+      <input type="text" id="guess" list="songs" placeholder="Busca la canción…" autocomplete="off">
+      <datalist id="songs"></datalist>
+      <div class="row">
+        <button class="b" id="skip">Saltar</button>
+        <button class="b p" id="send">Enviar</button>
+      </div>
+    </div>
+    <div id="end" class="end hide"></div>
+    <div style="text-align:center;margin-top:14px"><button class="b" id="next" style="max-width:200px">Otra canción</button></div>
+  </div>
+</main>
+
+<script>
+/* Lista de canciones (Título y Artista) */
+const LISTA=[
+  ["Tití Me Preguntó","Bad Bunny"],["Me Porto Bonito","Bad Bunny"],["Callaita","Bad Bunny"],
+  ["Yonaguni","Bad Bunny"],["Dákiti","Bad Bunny"],["Moscow Mule","Bad Bunny"],
+  ["Efecto","Bad Bunny"],["Ojitos Lindos","Bad Bunny"],["Provenza","Karol G"],
+  ["TQG","Karol G"],["Normal","Feid"],["Todo de Ti","Rauw Alejandro"],
+  ["Gasolina","Daddy Yankee"],["Despacito","Luis Fonsi"],["Danza Kuduro","Don Omar"],
+  ["Mi Gente","J Balvin"],["Chantaje","Shakira"]
+];
+
+const STEPS=[.5,1,2,4,8,16];
+const $=s=>document.querySelector(s);
+let SONGS=[],song,step,over,ready=false,timer,raf,audio=new Audio();
+
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9ñ ]/g,"").trim();
+const fmt=t=>"0:"+(t<10?"0":"")+(Number.isInteger(t)?t:t.toFixed(1));
+
+async function init(){
+  // Buscamos las previews gratuitas usando la API pública de iTunes (no requiere registros ni pagos)
+  const res=await Promise.all(LISTA.map(async([t,a])=>{
+    try{
+      const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(t+" "+a)}&media=music&entity=song&limit=1`);
+      const d=await r.json();
+      if(d.results&&d.results.length>0){
+        const track=d.results[0];
+        return {title:t,artist:a,preview:track.previewUrl,artwork:track.artworkUrl100};
+      }
+      return null;
+    }catch(e){return null}
+  }));
+  
+  SONGS=res.filter(Boolean);
+  if(!SONGS.length){
+    alert("No se pudieron cargar las canciones de prueba.");
+    return;
+  }
+
+  $("#songs").innerHTML=SONGS.map(s=>`<option value="${s.title.replace(/"/g,"&quot;")}">${s.artist}</option>`).join("");
+  $("#gamecard").classList.remove("hide");
+  $("#sub").textContent=SONGS.length+" canciones · 6 intentos";
+  newGame();
+}
+
+async function newGame(){
+  stop();
+  $("#next").disabled=true;
+  song=SONGS[Math.floor(Math.random()*SONGS.length)];
+  step=0;over=false;ready=false;
+  
+  $("#tries").innerHTML="";
+  for(let i=0;i<6;i++)$("#tries").insertAdjacentHTML("beforeend",'<div class="try"></div>');
+  $("#bar").innerHTML=STEPS.map(()=>"<i><b></b></i>").join("");
+  $("#game").classList.remove("hide");$("#end").classList.add("hide");$("#guess").value="";
+  updateUI();
+
+  audio.src=song.preview;
+  audio.load();
+  audio.oncanplaythrough=()=>{
+    ready=true;
+    $("#play").disabled=false;
+    $("#play").textContent="▶";
+    $("#next").disabled=false;
+  };
+}
+
+function updateUI(){
+  [...$("#bar").children].forEach((e,i)=>e.classList.toggle("on",i<=step));
+  $("#max").textContent=fmt(STEPS[step]);
+  $("#skip").textContent=step<5?`Saltar (+${STEPS[step+1]-STEPS[step]}s)`:"Rendirse";
+}
+
+function stop(){
+  clearTimeout(timer);cancelAnimationFrame(raf);
+  audio.pause();
+  audio.currentTime=0;
+  $("#play").textContent="▶";
+  [...$("#bar").children].forEach(e=>e.firstChild.style.transform="scaleX(0)");
+  $("#cur").textContent="0:00";
+}
+
+function play(){
+  if(!ready)return;
+  stop();
+  const dur=over?20:STEPS[step];
+  audio.currentTime=0;
+  audio.play();
+  const t0=performance.now();
+  $("#play").textContent="■";
+  
+  const tick=()=>{
+    const e=(performance.now()-t0)/1000;
+    $("#cur").textContent=fmt(Math.min(e,dur));
+    let acc=0;
+    for(let i=0;i<6;i++){
+      const w=STEPS[i]-(i?STEPS[i-1]:0);
+      $("#bar").children[i].firstChild.style.transform=`scaleX(${i<=step||over?Math.max(0,Math.min(1,(e-acc)/w)):0})`;acc+=w;
+    }
+    if(e<dur&&!audio.paused)raf=requestAnimationFrame(tick);
+  };
+  tick();
+  timer=setTimeout(()=>{audio.pause();stop();},dur*1000);
+}
+
+function addTry(txt,cls){const el=$("#tries").children[step];el.textContent=txt;el.className="try "+cls}
+
+function finish(win){
+  over=true;stop();
+  $("#game").classList.add("hide");
+  const e=$("#end");e.classList.remove("hide");
+  e.innerHTML=`<h2>${win?"🎉 ¡Acertaste!":"😅 Se acabó"}</h2><p><b>${song.title}</b> — ${song.artist}</p><p style="color:var(--mu);font-size:.85rem">${win?`En el intento ${step+1} de 6`:"Mejor suerte la próxima"} · pulsa ▶ para oírla</p>`;
+  [...$("#bar").children].forEach(b=>b.classList.add("on"));
+  ready=true;$("#play").disabled=false;
+}
+
+function wrong(txt,cls){
+  addTry(txt,cls);
+  if(step>=5){finish(false);return}
+  step++;updateUI();play();
+}
+
+$("#play").onclick=()=>{ if($("#play").textContent==="■")stop(); else play() };
+$("#skip").onclick=()=>{if(!over)wrong("⏭ Saltado","skip")};
+$("#send").onclick=submit;
+$("#guess").addEventListener("keydown",e=>{if(e.key==="Enter")submit()});
+
+function submit(){
+  if(over||!ready)return;
+  const v=$("#guess").value.trim();if(!v)return;
+  $("#guess").value="";
+  if(norm(v)===norm(song.title)){addTry("✔ "+song.title,"good");finish(true)}
+  else wrong("✘ "+v,"bad");
+}
+
+$("#next").onclick=newGame;
+
+// Iniciar aplicación automáticamente al cargar
+init();
+</script>
+</body>
+</html>
